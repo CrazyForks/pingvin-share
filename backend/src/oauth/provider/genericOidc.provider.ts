@@ -1,13 +1,13 @@
 import { Logger } from "@nestjs/common";
-import { ConfigService } from "../../config/config.service";
 import { JwtService } from "@nestjs/jwt";
 import { Cache } from "cache-manager";
 import * as jmespath from "jmespath";
 import { nanoid } from "nanoid";
+import { ConfigService } from "../../config/config.service";
 import { OAuthCallbackDto } from "../dto/oauthCallback.dto";
-import { OAuthProvider, OAuthToken } from "./oauthProvider.interface";
 import { OAuthSignInDto } from "../dto/oauthSignIn.dto";
 import { ErrorPageException } from "../exceptions/errorPage.exception";
+import { OAuthProvider, OAuthToken } from "./oauthProvider.interface";
 
 export abstract class GenericOidcProvider implements OAuthProvider<OidcToken> {
   protected discoveryUri: string;
@@ -116,6 +116,16 @@ export abstract class GenericOidcProvider implements OAuthProvider<OidcToken> {
     },
   ): Promise<OAuthSignInDto> {
     const idTokenData = this.decodeIdToken(token.idToken);
+    if (!idTokenData) {
+      this.logger.error(
+        `Can not get idTokenData from ID Token ${JSON.stringify(
+          token,
+          undefined,
+          2,
+        )}`,
+      );
+      throw new ErrorPageException("invalid_token");
+    }
     // maybe it's not necessary to verify the id token since it's directly obtained from the provider
 
     const key = `oauth-${this.name}-nonce-${query.state}`;
